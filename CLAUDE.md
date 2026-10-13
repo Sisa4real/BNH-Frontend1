@@ -2,7 +2,7 @@
 
 ## Custodian rules
 
-- Money is integer kobo only; never floats; never computed by an AI at runtime.
+- Money is exact decimal: NUMERIC(17,2) in the database, Python Decimal in code, decimal strings over the API. Never floats. Never computed by an AI.
 - DoA thresholds live in a database/config table and are enforced on the server. A role cannot approve above its band.
 - Authority = a position held by a person for a period. Designations are data.
 - The event log is append-only. No role, including admin, can edit or delete it. Corrections are new entries.
@@ -19,7 +19,6 @@ Staff-facing frontend for **Custodian by Brendan**, Brendan Nicholas Holdings' (
 ### Known gaps against the Custodian rules (fix as dedicated tasks, not silently)
 
 - **Backend URL fallback**: `src/hooks.server.ts` reads `process.env.BACKEND_URL` but falls back to a hard-coded `http://127.0.0.1:8000` when it is unset. The rule forbids a hard-coded URL; the fix is to fail clearly (503 "not configured") when the variable is missing.
-- **Money over the API**: the backend sends amounts as decimal naira strings (e.g. `"71640.00"`). `src/lib/money.ts` already converts them to `BigInt` kobo for previews and formatting — keep it that way and never use JS `Number` for money. When the backend moves to integer kobo (a backend task), this repo must update `money.ts`, the regenerated `src/lib/api/schema.ts`, and every form/display that sends or parses amounts.
 - **DoA thresholds**: the UI must not encode authority bands. Show the server-assigned authority and explanation only. The thresholds are currently hard-coded in the backend (`app/authority/policy.py`), which is a backend gap.
 
 ### Product references
@@ -102,6 +101,7 @@ Branch: all work, pushes and Render deploys use `main` on `github.com/Sisa4real/
 - Work on one feature at a time by its stable feature ID in `docs/reference/implementation_pan.md`, finished end to end with the backend where needed. Put the feature ID in the commit message. Update the tracker, `ui_todos.md` and `task_done.md` with actual results.
 - Preserve existing partial work and other people's changes; stage only the current feature.
 - Server responses decide totals, lifecycle, permissions and next actions. Hiding a button is never authorisation; no client-side policy engine.
+- Amounts arrive and are sent as decimal strings (e.g. `"71640.00"`). For previews and formatting, `src/lib/money.ts` converts them to exact `BigInt` kobo; never use JS `Number` or floats for money. The server total is authoritative.
 - Send expected versions and idempotency keys on relevant mutations; reuse a key only for a retry of identical intent. Disable duplicate clicks.
 - Never store credentials, recovery tokens, restricted evidence or bank data in browser storage. Don't log credentials, bank details, signatures or signed URLs. Clear user-scoped caches on logout or account change.
 - Mocks and fixtures only in tests or explicit isolated dev mode; never fake success after an API failure.
