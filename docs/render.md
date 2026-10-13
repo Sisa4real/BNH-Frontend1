@@ -1,6 +1,6 @@
 # Deploy the frontend on Render
 
-Create a **Web Service** from this repository (not a Static Site), select branch **dev** and runtime **Docker**, and use `./Dockerfile` with build context `.`. Leave Docker Command empty. The image builds SvelteKit and runs its Node server on Render's `PORT`. You can also import this repository's `render.yaml`.
+Create a **Web Service** from this repository (not a Static Site), select branch **main** and runtime **Docker**, and use `./Dockerfile` with build context `.`. Leave Docker Command empty. The image builds SvelteKit and runs its Node server on Render's `PORT`. You can also import this repository's `render.yaml`.
 
 Set:
 

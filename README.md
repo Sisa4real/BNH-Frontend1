@@ -1,6 +1,6 @@
 # Custodian Frontend
 
-SvelteKit and TypeScript interface for Brendan Nicholas Holdings' requisition and approval system. Development branch: `dev`. Use Node 24.21.0, pinned in `.nvmrc`, and npm's committed lockfile.
+SvelteKit and TypeScript interface for Brendan Nicholas Holdings' requisition and approval system. Development branch: `main`. Use Node 24.21.0, pinned in `.nvmrc`, and npm's committed lockfile.
 
 **Start here: [Clone, Set Up and Develop](docs/development.md).** The guide covers both repositories, configuration, first sign-in, the codebase map, tests and the feature delivery workflow. Keep `bnh-ui` beside `bnh-backend`.
 

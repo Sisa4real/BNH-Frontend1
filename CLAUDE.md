@@ -95,7 +95,7 @@ E2E needs the sibling backend set up with `uv sync` and its isolated PostgreSQL 
 
 Render, Docker web service, using `Dockerfile` and `render.yaml` (`healthCheckPath: /health`). Set `BACKEND_URL` to the backend's origin; `NODE_ENV=production` and `BODY_SIZE_LIMIT=11M` are set in the image. Deploy the backend first. Details in `docs/render.md`.
 
-Note: `render.yaml` and the docs still name branch `dev`, and `docs/development.md` still clones from `Bapper-Ik/bnh-ui`. The current remote is `github.com/Sisa4real/BNH-Frontend1` and has only `main`. Confirm the deploy branch with the owner before changing either.
+Branch: all work, pushes and Render deploys use `main` on `github.com/Sisa4real/BNH-Frontend1`.
 
 ### Engineering conventions
 

@@ -1,7 +1,7 @@
 services:
   - type: web
     name: bnh-ui
-    branch: dev
+    branch: main
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
