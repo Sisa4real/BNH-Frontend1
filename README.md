@@ -27,7 +27,7 @@ Requesters can persist drafts, attach documents, submit, retract before action, 
 
 - [Development and onboarding guide](docs/development.md)
 - [Render deployment](docs/render.md)
-- [Engineering and delivery instructions](AGENTS.md)
+- [Engineering and delivery instructions](CLAUDE.md)
 - [Fourteen-screen scope](docs/reference/ui_scrrens.md)
 - [Feature requirements and tracker](docs/reference/implementation_pan.md)
 - [Current integration notes](docs/reference/ui_todos.md)

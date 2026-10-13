@@ -8,5 +8,6 @@ build
 test-results
 playwright-report
 docs
-AGENTS.md
+CLAUDE.md
+.claude
 README.md
