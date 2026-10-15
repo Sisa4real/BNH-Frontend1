@@ -10,6 +10,7 @@
 		onChanged,
 		onStaged,
 		onBusy,
+		onFiles,
 		disabled = false
 	}: {
 		request?: RequestView;
@@ -18,6 +19,8 @@
 		onChanged: () => Promise<void>;
 		onStaged?: (ids: string[]) => void;
 		onBusy?: (value: boolean) => void;
+		/** Receives the latest document listing (null when it could not be loaded). */
+		onFiles?: (page: AttachmentPage | null) => void;
 		disabled?: boolean;
 	} = $props();
 	const editable = $derived(!request || request.available_actions.includes('edit'));
@@ -64,6 +67,9 @@
 	}
 	$effect(() => {
 		onBusy?.(busy || !!selected || !files || !!error);
+	});
+	$effect(() => {
+		onFiles?.(files);
 	});
 	onMount(load);
 	onDestroy(() => {
@@ -157,6 +163,11 @@
 
 <section class="card stack">
 	<h2>Supporting Documents</h2>
+	{#if files?.submission_requires_attachment && editable && !files.access_restricted}<p
+			class="requirement"
+		>
+			Required: at least one document
+		</p>{/if}
 	{#if !request}<p>
 			Files upload when selected. Save your draft within 24 hours to keep them with this
 			requisition.
@@ -278,7 +289,10 @@
 							}}>Cancel File</button
 						>{/if}
 				</div>
-			{:else}<p role="status">
+			{:else if files.submission_requires_attachment}<p role="status">
+					Document uploads are unavailable until private storage is configured. You can still save
+					your draft, but submission is blocked until private storage is available.
+				</p>{:else}<p role="status">
 					Document uploads are unavailable until private storage is configured. You can still save
 					and submit a request without optional documents.
 				</p>{/if}
@@ -314,6 +328,11 @@
 	section {
 		min-width: 0;
 		grid-template-columns: minmax(0, 1fr);
+	}
+	.requirement {
+		margin: 0;
+		font-weight: 600;
+		color: var(--ink);
 	}
 	.document {
 		display: grid;

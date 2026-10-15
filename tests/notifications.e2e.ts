@@ -1,4 +1,5 @@
 import { inspectWidths } from './responsive.js';
+import { attachSupportingDocument } from './workspace.js';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -19,6 +20,7 @@ async function login(page: Page, role: string) {
 	await page.goto('/vendors');
 }
 async function sign(page: Page, role: string, button: string, confirm: string, reason = '') {
+	if (button === 'Review & Submit') await attachSupportingDocument(page);
 	await page.getByRole('button', { name: button, exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	if (reason) await dialog.getByLabel('Reason', { exact: true }).fill(reason);

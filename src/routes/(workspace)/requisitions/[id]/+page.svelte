@@ -3,7 +3,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api, ApiError } from '#lib/api/client.js';
-	import type { Intent } from '#lib/api/schema.js';
+	import type { AttachmentPage, Intent } from '#lib/api/schema.js';
 	import { money, stateLabel, dateTime, lineKobo, formatKobo } from '#lib/money.js';
 	import RequisitionForm from '#lib/features/requisitions/RequisitionForm.svelte';
 	import Attachments from '#lib/features/requisitions/Attachments.svelte';
@@ -81,6 +81,14 @@
 	let signing = $state<Intent['action'] | null>(null);
 	const req = $derived(data.request);
 	const vendor = $derived(req.content.vendor);
+	// Supporting documents reported by the Attachments panel. Until they load, assume the
+	// server's rule applies so Review & Submit is never enabled early.
+	let documents = $state<AttachmentPage | null>(null);
+	const submitNeedsDocument = $derived(
+		req.available_actions.includes('submit') &&
+			(documents?.submission_requires_attachment ?? true) &&
+			!documents?.items.some((file) => file.validation_state === 'validated')
+	);
 	const actionLabels: Record<string, string> = {
 		submit: 'Review & Submit',
 		approve: 'Approve',
@@ -253,6 +261,7 @@
 			{#key `${req.version}:${req.viewing_revision ?? 'current'}`}<Attachments
 					request={req}
 					onChanged={saved}
+					onFiles={(listing) => (documents = listing)}
 				/>{/key}
 			{#key `${req.id}:${req.version}:${req.viewing_revision ?? 'current'}`}<Exports
 					request={req}
@@ -295,7 +304,6 @@
 					</dd>
 				</div>
 			</dl>
-			{#if req.routing_explanation}<p class="route">{req.routing_explanation}</p>{/if}
 			{#if req.submission_blocker}<p class="error" role="status">
 					Before submitting: {req.submission_blocker}
 				</p>{/if}
@@ -325,10 +333,14 @@
 						class="secondary"
 						onclick={() => (editing = true)}>Edit Draft</button
 					>{/if}{#each req.available_actions.filter( (a: string) => ['submit', 'approve', 'reject', 'return'].includes(a) ) as action (action)}<button
-						disabled={!!req.submission_blocker}
+						disabled={!!req.submission_blocker || (action === 'submit' && submitNeedsDocument)}
 						onclick={() => (signing = action as Intent['action'])}
 						>{actionLabels[action] || action}</button
 					>{/each}
+				{#if submitNeedsDocument}<p class="document-note" role="status">
+						Attach at least one supporting document to submit.{#if documents && !documents.uploads_enabled}
+							Submission is blocked until private storage is available.{/if}
+					</p>{/if}
 			</div>
 		</aside>
 	</div>
@@ -408,10 +420,13 @@
 		font-weight: 600;
 		overflow-wrap: anywhere;
 	}
-	.approval-note,
-	.route {
+	.approval-note {
 		font-size: 12px;
 		margin: 12px 0 0;
+	}
+	.document-note {
+		font-size: 12px;
+		margin: 0;
 	}
 	hr {
 		border: 0;

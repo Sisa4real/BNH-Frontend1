@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { attachSupportingDocument } from './workspace.js';
 
 function fixture() {
 	return JSON.parse(readFileSync('test-results/vendor-fixture.json', 'utf8')) as {
@@ -27,6 +28,7 @@ async function fill(page: Page, title: string, amount = '71640') {
 	await page.getByLabel('Unit Price (₦)', { exact: true }).fill(amount);
 }
 async function sign(page: Page, name: string) {
+	await attachSupportingDocument(page);
 	await page.getByRole('button', { name: 'Review & Submit', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
 	await dialog.getByLabel('Your Password').fill(fixture().password);
@@ -98,6 +100,8 @@ test('saved draft survives refresh during detail loading without an HOD', async 
 		await expect(page.getByText('₦96,640.00').first()).toBeVisible();
 		await expect(page.getByRole('cell').filter({ hasText: /^Delivery$/ })).toBeVisible();
 		await expect(page.getByRole('cell').filter({ hasText: /^Installation$/ })).toBeVisible();
+		// With a document attached, the missing HOD appointment is what blocks submission.
+		await attachSupportingDocument(page, 'no-hod-quote.png', { expectSubmittable: false });
 		await expect(page.getByRole('button', { name: 'Review & Submit', exact: true })).toBeDisabled();
 		await expect(page.getByText(/A unique active hod appointment is required/)).toBeVisible();
 		// Saving replaces the empty creation form in history with the permanent URL.
@@ -534,4 +538,54 @@ test('administrator configures a department code while a requester preserves and
 	await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
 	await expect(page.getByText(/BNH-ADM-\d{6,}/).first()).toBeVisible();
 	await context.close();
+});
+
+test('Review & Submit needs a supporting document, drafts save without one and routing text stays in signing', async ({
+	page
+}) => {
+	await login(page);
+	await page.goto('/requisitions/new');
+	const title = 'Document requirement ' + randomUUID();
+	await fill(page, title, '25000');
+	await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
+	// Saving a draft still works without any document.
+	await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+	await expect(page.getByText('Required: at least one document', { exact: true })).toBeVisible();
+	await expect(page.getByText('No supporting documents attached.', { exact: true })).toBeVisible();
+	const submit = page.getByRole('button', { name: 'Review & Submit', exact: true });
+	await expect(submit).toBeDisabled();
+	await expect(
+		page.getByText('Attach at least one supporting document to submit.', { exact: true })
+	).toBeVisible();
+	await expect(
+		page.getByText(
+			'Before submitting: Attach at least one supporting document before submitting.',
+			{ exact: true }
+		)
+	).toBeVisible();
+	// Editing and re-saving the draft also works without a document.
+	await page.getByRole('button', { name: 'Edit Draft', exact: true }).click();
+	await page.getByLabel('Location', { exact: true }).fill('Lagos');
+	await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
+	await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+	await expect(submit).toBeDisabled();
+	// The summary panel keeps Required Authority but no longer shows the routing line.
+	const summary = page.locator('aside.summary');
+	await expect(summary.getByText('Required Authority', { exact: true })).toBeVisible();
+	await expect(summary.getByText('Head of Department (HOD)', { exact: true })).toBeVisible();
+	await expect(summary.getByText(/Amount requires/)).toHaveCount(0);
+	// One valid upload enables submission.
+	await attachSupportingDocument(page, 'requirement-quote.png');
+	await expect(submit).toBeEnabled();
+	await expect(
+		page.getByText('Attach at least one supporting document to submit.', { exact: true })
+	).toHaveCount(0);
+	await expect(page.getByText(/^Before submitting:/)).toHaveCount(0);
+	// The signing dialog still shows the server's routing text with readable office names.
+	await submit.click();
+	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
+	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
+	await expect(dialog.getByText('Amount requires HOD.', { exact: true })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(dialog).not.toBeVisible();
 });

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { attachSupportingDocument } from './workspace.js';
 
 function fixture() {
 	return JSON.parse(readFileSync('test-results/vendor-fixture.json', 'utf8')) as {
@@ -111,6 +112,7 @@ for (const sharedVendor of [false, true]) {
 			await requester.getByRole('button', { name: 'Save Draft', exact: true }).click();
 			await expect(requester.getByRole('heading', { name: title, exact: true })).toBeVisible();
 			const url = requester.url();
+			await attachSupportingDocument(requester);
 			await requester.getByRole('button', { name: 'Review & Submit', exact: true }).click();
 			await prepare(requester);
 			await sign(requester, 'requester', 'Submit Requisition');
@@ -222,6 +224,7 @@ test('HOD signs own low-value requisition separately and downloads the departmen
 		await hod.getByLabel('Unit Price (₦)', { exact: true }).fill('5000000');
 		await hod.getByRole('button', { name: 'Save Draft', exact: true }).click();
 		await expect(hod.getByRole('heading', { name: title, exact: true })).toBeVisible();
+		await attachSupportingDocument(hod);
 		await hod.getByRole('button', { name: 'Review & Submit', exact: true }).click();
 		await prepare(hod);
 		await sign(hod, 'hod', 'Submit Requisition');

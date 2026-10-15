@@ -1,5 +1,5 @@
 import { inspectWidths } from './responsive.js';
-import { openNavigation } from './workspace.js';
+import { attachSupportingDocument, openNavigation } from './workspace.js';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -20,6 +20,7 @@ async function login(page: Page, role: string) {
 	await page.goto('/vendors');
 }
 async function prepare(page: Page, role: string, action: string, reason = '') {
+	if (action === 'Review & Submit') await attachSupportingDocument(page);
 	await page.getByRole('button', { name: action, exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
 	if (reason) await dialog.getByLabel('Reason', { exact: true }).fill(reason);
@@ -131,6 +132,7 @@ test('recent sign-in skips the password, the signer is the account and a lapsed 
 	page
 }) => {
 	await create(page, '25000');
+	await attachSupportingDocument(page);
 	await page.getByRole('button', { name: 'Review & Submit', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
 	// Simulate the server's signing window having lapsed: the dialog must ask for the password.
@@ -202,6 +204,8 @@ test('returned request preserves signed evidence, corrects and routes to a diffe
 	await expect(page.getByRole('button', { name: 'View original-quote.png' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Review & Submit', exact: true })).toHaveCount(0);
 	await page.getByRole('link', { name: 'Back to Current Request' }).click();
+	// Wait for the current correction draft (not the signed revision 1 view) before submitting.
+	await expect(page.getByRole('button', { name: 'Edit Draft', exact: true })).toBeVisible();
 	await sign(page, 'requester', 'Review & Submit');
 	await expect(page.getByText('Chief of Staff', { exact: true })).toBeVisible();
 	await login(page, 'hod');

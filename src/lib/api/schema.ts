@@ -42,6 +42,7 @@ export type AttachmentPage = {
   "items": Array<AttachmentView>;
   "request_version": number;
   "uploads_enabled": boolean;
+  "submission_requires_attachment"?: boolean;
   "max_bytes": number;
   "max_count": number;
 };

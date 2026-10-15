@@ -4950,6 +4950,11 @@
             "type": "boolean",
             "title": "Uploads Enabled"
           },
+          "submission_requires_attachment": {
+            "type": "boolean",
+            "title": "Submission Requires Attachment",
+            "default": true
+          },
           "max_bytes": {
             "type": "integer",
             "title": "Max Bytes"
