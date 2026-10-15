@@ -22,7 +22,9 @@
 	let dialog: HTMLDialogElement;
 	let canvas = $state<HTMLCanvasElement>();
 	let password = $state(''),
-		signer = $state(''),
+		// The server accepts a signature only if the password was confirmed within its
+		// signing window (login counts). Ask again only when the server says it is needed.
+		passwordNeeded = $state(false),
 		reason = $state(''),
 		error = $state(''),
 		busy = $state(false),
@@ -35,6 +37,9 @@
 	let reviewRequired = $state(false);
 	let commandKey = crypto.randomUUID();
 	let pendingCommand = $state<string | null>(null);
+	function freshAuthenticationRequired(e: unknown) {
+		return e instanceof ApiError && e.code === 'FRESH_AUTHENTICATION_REQUIRED';
+	}
 	async function failure(e: unknown) {
 		error = e instanceof Error ? e.message : 'Unable to record signature.';
 		if (
@@ -131,7 +136,8 @@
 		busy = true;
 		error = '';
 		try {
-			await api('/auth/reauthenticate', { method: 'POST', body: JSON.stringify({ password }) });
+			if (password)
+				await api('/auth/reauthenticate', { method: 'POST', body: JSON.stringify({ password }) });
 			password = '';
 			challenge = await api<ChallengeView>(
 				(signingTarget ?? '/requisitions/' + request.id) + '/signing-challenges',
@@ -142,6 +148,10 @@
 			);
 		} catch (e) {
 			await failure(e);
+			if (freshAuthenticationRequired(e)) {
+				passwordNeeded = true;
+				error = 'Enter your password to continue.';
+			}
 		} finally {
 			password = '';
 			busy = false;
@@ -158,7 +168,7 @@
 				reason,
 				challenge_id: challenge.id,
 				idempotency_key: commandKey,
-				signer_name: signer,
+				signer_name: name,
 				consent,
 				strokes
 			});
@@ -178,6 +188,14 @@
 				commandKey = crypto.randomUUID();
 			}
 			await failure(e);
+			if (freshAuthenticationRequired(e)) {
+				// The signing window lapsed while reviewing: confirm the password, then sign again.
+				challenge = null;
+				passwordNeeded = true;
+				strokes = [];
+				consent = false;
+				error = 'Your password confirmation has expired. Enter your password to continue.';
+			}
 		} finally {
 			busy = false;
 		}
@@ -225,16 +243,20 @@
 				prepare();
 			}}
 		>
-			<p>Confirm your identity before signing this record.</p>
+			<p>
+				{passwordNeeded
+					? 'Confirm your password before signing this record.'
+					: 'If you signed in or confirmed your password in the last few minutes, you can continue without entering it again.'}
+			</p>
 			{#if action === 'reject' || action === 'return' || action === 'board_return'}<label
 					>Reason<textarea bind:value={reason} required maxlength="2000"></textarea></label
 				>{/if}
 			<label
-				>Your Password<input
+				>Your Password{passwordNeeded ? '' : ' (If Asked)'}<input
 					type="password"
 					autocomplete="current-password"
 					bind:value={password}
-					required
+					required={passwordNeeded}
 				/></label
 			>
 			{#if error}<div class="error" role="alert">{error}</div>{/if}
@@ -297,14 +319,7 @@
 			{/if}
 			{#if reason}<p><strong>Reason:</strong> {reason}</p>{/if}
 			<fieldset disabled={busy || !!pendingCommand}>
-				<label
-					>Confirm Your Full Name<input
-						bind:value={signer}
-						placeholder={name}
-						required
-						autocomplete="name"
-					/></label
-				>
+				<p class="signer">Signing As <strong>{name}</strong></p>
 				<div>
 					<label for="signature">Your Signature</label>
 					<p id="signature-help" class="help">
@@ -421,6 +436,10 @@
 		border-radius: 5px;
 		background: var(--surface);
 		touch-action: none;
+	}
+	.signer {
+		margin: 0;
+		font-size: 14px;
 	}
 	.help {
 		font-size: 12px;

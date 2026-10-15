@@ -24,7 +24,7 @@ async function sign(page: Page, role: string, button: string, confirm: string, r
 	if (reason) await dialog.getByLabel('Reason', { exact: true }).fill(reason);
 	await dialog.getByLabel('Your Password').fill(fixture().password);
 	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
-	await dialog.getByLabel('Confirm Your Full Name').fill('Synthetic ' + role);
+	await expect(dialog.getByText('Signing As Synthetic ' + role, { exact: true })).toBeVisible();
 	await dialog.getByLabel('Draw Your Signature').focus();
 	for (const key of ['Enter', 'ArrowRight', 'ArrowDown', 'Enter']) await page.keyboard.press(key);
 	await dialog.getByRole('checkbox').check();

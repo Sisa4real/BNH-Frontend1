@@ -25,7 +25,7 @@ async function prepare(page: Page, role: string, action: string, reason = '') {
 	if (reason) await dialog.getByLabel('Reason', { exact: true }).fill(reason);
 	await dialog.getByLabel('Your Password').fill(fixture().password);
 	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
-	await dialog.getByLabel('Confirm Your Full Name').fill('Synthetic ' + role);
+	await expect(dialog.getByText('Signing As Synthetic ' + role, { exact: true })).toBeVisible();
 	await dialog.getByLabel('Draw Your Signature').focus();
 	await page.keyboard.press('Enter');
 	await page.keyboard.press('ArrowRight');
@@ -126,6 +126,45 @@ for (const [amount, role] of [
 		await expect(page.getByText('Approved', { exact: true })).toBeVisible();
 	});
 }
+
+test('recent sign-in skips the password, the signer is the account and a lapsed window asks again', async ({
+	page
+}) => {
+	await create(page, '25000');
+	await page.getByRole('button', { name: 'Review & Submit', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
+	// Simulate the server's signing window having lapsed: the dialog must ask for the password.
+	await page.route('**/signing-challenges', (route) =>
+		route.fulfill({
+			status: 401,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				code: 'FRESH_AUTHENTICATION_REQUIRED',
+				message: 'Confirm your password before signing.'
+			})
+		})
+	);
+	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
+	await expect(dialog.getByText('Enter your password to continue.')).toBeVisible();
+	await expect(dialog.getByLabel('Your Password', { exact: true })).toHaveAttribute('required', '');
+	await page.unroute('**/signing-challenges');
+	// Just signed in, so the real server accepts the signature without retyping the password.
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Review & Submit', exact: true }).click();
+	await expect(dialog.getByLabel('Your Password (If Asked)')).toHaveValue('');
+	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
+	await expect(dialog.getByText('Signing As Synthetic requester', { exact: true })).toBeVisible();
+	await expect(dialog.getByLabel('Confirm Your Full Name')).toHaveCount(0);
+	await dialog.getByLabel('Draw Your Signature').focus();
+	await page.keyboard.press('Enter');
+	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('Enter');
+	await dialog.getByRole('checkbox').check();
+	await dialog.getByRole('button', { name: 'Submit Requisition', exact: true }).click();
+	await expect(dialog).not.toBeVisible();
+	await expect(page.getByText('Awaiting Approval', { exact: true })).toBeVisible();
+});
 
 test('returned request preserves signed evidence, corrects and routes to a different authority', async ({
 	page

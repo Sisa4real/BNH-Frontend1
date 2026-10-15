@@ -445,7 +445,7 @@ export type OfficeInput = {
   "entity_id": string;
   "department_id"?: string | null;
   "role": "hod" | "chief_of_staff" | "md" | "secretary" | "chairman";
-  "authorisation_reference": string;
+  "authorisation_reference"?: string;
   "valid_from"?: string;
   "valid_until"?: string | null;
 };
@@ -661,7 +661,7 @@ export type StaffOfficeSet = {
   "entity_id": string;
   "department_id"?: string | null;
   "role": "hod" | "chief_of_staff" | "md" | "secretary" | "chairman";
-  "authorisation_reference": string;
+  "authorisation_reference"?: string;
   "valid_from"?: string;
   "valid_until"?: string | null;
 };

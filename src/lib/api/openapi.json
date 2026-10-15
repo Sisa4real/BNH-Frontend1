@@ -7161,8 +7161,8 @@
           "authorisation_reference": {
             "type": "string",
             "maxLength": 300,
-            "minLength": 3,
-            "title": "Authorisation Reference"
+            "title": "Authorisation Reference",
+            "default": ""
           },
           "valid_from": {
             "type": "string",
@@ -7187,8 +7187,7 @@
         "required": [
           "identity_id",
           "entity_id",
-          "role",
-          "authorisation_reference"
+          "role"
         ],
         "title": "OfficeInput"
       },
@@ -8394,8 +8393,8 @@
           "authorisation_reference": {
             "type": "string",
             "maxLength": 300,
-            "minLength": 3,
-            "title": "Authorisation Reference"
+            "title": "Authorisation Reference",
+            "default": ""
           },
           "valid_from": {
             "type": "string",
@@ -8421,8 +8420,7 @@
           "expected_version",
           "identity_id",
           "entity_id",
-          "role",
-          "authorisation_reference"
+          "role"
         ],
         "title": "StaffOfficeSet"
       },

@@ -480,7 +480,9 @@
 										held.valid_until
 									)}</small
 								>
-								<p class="reference">Reference: {held.authorisation_reference}</p>
+								{#if held.authorisation_reference}<p class="reference">
+										Reference: {held.authorisation_reference}
+									</p>{/if}
 								{#if held.active && selected.actions.includes('revoke_office')}<button
 										class="secondary"
 										onclick={() =>
@@ -578,10 +580,8 @@
 								'Select an eligible company'}</strong
 						>
 					</p>{/if}<label
-					>Authorisation Reference<input
+					>Authorisation Reference (Optional)<input
 						bind:value={reference}
-						required
-						minlength="3"
 						maxlength="300"
 						placeholder="Appointment letter or approved reference"
 					/></label

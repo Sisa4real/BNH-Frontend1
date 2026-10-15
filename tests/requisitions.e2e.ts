@@ -31,7 +31,7 @@ async function sign(page: Page, name: string) {
 	const dialog = page.getByRole('dialog', { name: 'Sign Requisition' });
 	await dialog.getByLabel('Your Password').fill(fixture().password);
 	await dialog.getByRole('button', { name: 'Continue to Signature' }).click();
-	await dialog.getByLabel('Confirm Your Full Name').fill(name);
+	await expect(dialog.getByText('Signing As ' + name, { exact: true })).toBeVisible();
 	await dialog.getByLabel('Draw Your Signature').focus();
 	await page.keyboard.press('Enter');
 	await page.keyboard.press('ArrowRight');
